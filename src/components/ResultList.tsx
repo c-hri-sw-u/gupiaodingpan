@@ -14,6 +14,7 @@ interface ResultListProps {
   favoriteNames?: Record<string, string>;
   onToggleFavorite: (code: string, name: string) => void;
   onClearFavorites?: () => void;
+  onDiagnose?: () => void;
 }
 
 export const ResultList: React.FC<ResultListProps> = ({
@@ -27,7 +28,8 @@ export const ResultList: React.FC<ResultListProps> = ({
   favorites = [],
   favoriteNames = {},
   onToggleFavorite,
-  onClearFavorites
+  onClearFavorites,
+  onDiagnose
 }) => {
   const [activeTab, setActiveTab] = React.useState<'results' | 'favorites'>('results');
   const [filterIndustry, setFilterIndustry] = React.useState<string>('All');
@@ -395,10 +397,35 @@ export const ResultList: React.FC<ResultListProps> = ({
 
         {/* Unmatched State */}
         {activeTab === 'results' && !isScanning && results.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)', textAlign: 'center', padding: '16px' }}>
-            <HelpCircle size={28} style={{ marginBottom: '8px', opacity: 0.3 }} />
-            <p>未找到匹配个股</p>
-            <p style={{ fontSize: '10px', marginTop: '4px' }}>可尝试在左侧放宽技术规则参数，重新扫描</p>
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)', textAlign: 'center', padding: '16px', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <HelpCircle size={28} style={{ marginBottom: '8px', opacity: 0.3 }} />
+              <p style={{ fontWeight: 500, color: 'var(--text-primary)' }}>未找到匹配个股</p>
+              <p style={{ fontSize: '11px', marginTop: '4px', color: 'var(--text-secondary)' }}>可尝试在左侧放宽技术规则参数，重新扫描。</p>
+            </div>
+            {onDiagnose && (
+              <button
+                type="button"
+                onClick={onDiagnose}
+                className="btn-primary"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  background: 'linear-gradient(135deg, var(--accent-blue), #2563eb)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  color: '#fff',
+                  boxShadow: '0 0 12px rgba(37, 99, 235, 0.3)',
+                  fontWeight: 500
+                }}
+              >
+                <span>🔍 一键诊断 (AI 智能调优建议)</span>
+              </button>
+            )}
           </div>
         )}
 

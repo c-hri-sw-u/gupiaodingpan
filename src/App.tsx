@@ -44,11 +44,17 @@ function fetchJsonp(url: string, callbackName: string): Promise<any> {
   });
 }
 
+interface RuleDiagnosis {
+  explanation: string;
+  suggestedUserPrompt: string;
+  suggestedOutline: string;
+}
 
 function App() {
   const [params, setParams] = useState<ScanParams>(DEFAULT_PARAMS);
   const [rules, setRules] = useState<Rule[]>([]);
   const [selectedRuleId, setSelectedRuleId] = useState<string>('default');
+  const [ruleDiagnosis, setRuleDiagnosis] = useState<RuleDiagnosis | null>(null);
 
   // Load rules from localStorage on mount
   useEffect(() => {
@@ -152,6 +158,7 @@ function App() {
 
   const handleOpenCreateModal = () => {
     setOutlineText('');
+    setRuleDiagnosis(null);
     setRuleModal({
       isOpen: true,
       mode: 'create',
@@ -162,6 +169,7 @@ function App() {
 
   const handleOpenEditModal = (ruleId: string) => {
     const rule = rules.find(r => r.id === ruleId);
+    setRuleDiagnosis(null);
     if (rule) {
       setRuleModal({
         isOpen: true,
@@ -179,6 +187,106 @@ function App() {
   const handleCloseRuleModal = () => {
     setRuleModal(prev => ({ ...prev, isOpen: false }));
     setOutlineText('');
+    setRuleDiagnosis(null);
+  };
+
+  const runStrategyDiagnosis = async () => {
+    const activeRule = rules.find(r => r.id === selectedRuleId);
+    if (!activeRule) {
+      alert('未找到当前活跃的策略规则，无法进行诊断。');
+      return;
+    }
+
+    const apiKey = apiSettings.apiKey;
+    const model = apiSettings.model || 'deepseek/deepseek-v4-flash';
+
+    if (!apiKey || !apiKey.trim()) {
+      alert('请先在配置中设置您的 OpenRouter API Key！点击选择规则右侧的小齿轮按钮进行设置。');
+      setIsSettingsOpen(true);
+      return;
+    }
+
+    setIsAIGenerating(true);
+    setAiLoadingText('AI 正在诊断为何匹配不到个股并拟定修改建议...');
+    
+    try {
+      const systemPrompt = `You are an expert quantitative trading strategy debugger. 
+The user ran a stock screening strategy, but it matched 0 stocks in the current market.
+Your task is to analyze the strategy's requirements, identify which conditions might be too strict (e.g., too many consecutive limit-up days, too narrow ma pullback range, too many indicator filters active at once), and propose realistic modifications to relax the rules so that it can match stocks while preserving the core trading logic.
+
+You must output ONLY a valid JSON object. Do not include markdown code block syntax (like \`\`\`json). The JSON must conform exactly to this schema:
+{
+  "explanation": "A brief explanation of why the current strategy matched 0 stocks (e.g., '连续涨停3天且回踩偏离度小于1%的要求在当前大盘下过于苛刻，建议降低涨停天数或放宽回踩幅度') in Chinese.",
+  "suggestedUserPrompt": "The proposed modified natural language strategy description (in Chinese). This should relax the too-strict criteria.",
+  "suggestedOutline": "The proposed modified step-by-step strategy outline (in Chinese)."
+}
+`;
+
+      const userContent = `当前运行的策略名称: ${activeRule.name}
+用户初始策略要求: ${activeRule.userPrompt || '未提供'}
+AI 编译出来的策略步骤大纲: ${activeRule.refinedPrompt || '未提供'}
+当前应用的策略参数: ${JSON.stringify(activeRule.params)}
+
+诊断背景: 在当前市场行情快照下进行全市场扫描，发现符合以上规则条件的个股数量为 0。
+请诊断为何无法找到个股，并给出推荐 of 放宽参数或条件的修改建议，同时给出修改后的初始策略要求和策略大纲。`;
+
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'Stock Monitor System'
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userContent }
+          ],
+          response_format: { type: 'json_object' }
+        })
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson?.error?.message || `请求失败，HTTP 状态码: ${response.status}`);
+      }
+
+      const resJson = await response.json();
+      let responseText = resJson.choices?.[0]?.message?.content;
+      if (!responseText) {
+        throw new Error('API 返回的诊断内容为空。');
+      }
+
+      responseText = responseText.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
+      const parsedData = JSON.parse(responseText);
+
+      if (!parsedData.suggestedUserPrompt || !parsedData.suggestedOutline) {
+        throw new Error('返回的诊断数据缺少关键建议字段。');
+      }
+
+      setRuleModal({
+        isOpen: true,
+        mode: 'edit',
+        ruleId: activeRule.id,
+        name: activeRule.name,
+        userPrompt: activeRule.userPrompt || ''
+      });
+      setOutlineText(activeRule.refinedPrompt || '');
+      
+      setRuleDiagnosis({
+        explanation: parsedData.explanation || '策略过于严格，未匹配到任何个股。',
+        suggestedUserPrompt: parsedData.suggestedUserPrompt,
+        suggestedOutline: parsedData.suggestedOutline
+      });
+
+    } catch (err: any) {
+      console.error('AI 策略诊断出错:', err);
+      alert(`AI 一键诊断策略失败：\n${err.message || err}`);
+    } finally {
+      setIsAIGenerating(false);
+    }
   };
 
   const handleSaveRuleFromModal = (name: string, userPrompt: string) => {
@@ -1932,6 +2040,7 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
               favoriteNames={favoriteNames}
               onToggleFavorite={handleToggleFavorite}
               onClearFavorites={handleClearFavorites}
+              onDiagnose={runStrategyDiagnosis}
             />
           </section>
         )}
@@ -1987,6 +2096,82 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
                 &times;
               </button>
             </div>
+
+            {/* Diagnosis (if available) */}
+            {ruleDiagnosis && (
+              <div style={{
+                background: 'rgba(59, 130, 246, 0.05)',
+                border: '1px solid rgba(59, 130, 246, 0.15)',
+                borderRadius: '8px',
+                padding: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#60a5fa', fontSize: '13px', fontWeight: 'bold' }}>
+                  <span>🩺 AI 一键诊断与调优建议</span>
+                </div>
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
+                  {ruleDiagnosis.explanation}
+                </p>
+
+                {/* Compare View */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed rgba(255, 255, 255, 0.08)', paddingTop: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    {/* Left Column: Old/Original */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 'bold' }}>原规则要求</span>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', background: 'rgba(255, 255, 255, 0.02)', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-light)', minHeight: '60px', overflowY: 'auto', maxHeight: '100px', whiteSpace: 'pre-wrap' }}>
+                        <strong>初始要求:</strong><br/>
+                        {ruleModal.userPrompt || '无'}<br/><br/>
+                        <strong>AI策略大纲:</strong><br/>
+                        {outlineText || '无'}
+                      </div>
+                    </div>
+                    {/* Right Column: Suggested */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 'bold' }}>新修改建议</span>
+                      <div style={{ fontSize: '11px', color: '#93c5fd', background: 'rgba(59, 130, 246, 0.05)', padding: '8px', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.15)', minHeight: '60px', overflowY: 'auto', maxHeight: '100px', whiteSpace: 'pre-wrap' }}>
+                        <strong>建议要求:</strong><br/>
+                        {ruleDiagnosis.suggestedUserPrompt}<br/><br/>
+                        <strong>建议大纲:</strong><br/>
+                        {ruleDiagnosis.suggestedOutline}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Apply suggestion button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRuleModal(prev => ({
+                        ...prev,
+                        userPrompt: ruleDiagnosis.suggestedUserPrompt
+                      }));
+                      setOutlineText(ruleDiagnosis.suggestedOutline);
+                    }}
+                    className="btn-primary"
+                    style={{
+                      height: '26px',
+                      padding: '0 10px',
+                      fontSize: '11px',
+                      background: 'rgba(59, 130, 246, 0.2)',
+                      border: '1px solid rgba(59, 130, 246, 0.4)',
+                      color: '#93c5fd',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      alignSelf: 'flex-end',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      marginTop: '4px'
+                    }}
+                  >
+                    <span>⚡️ 应用修改建议</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Form Fields */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
