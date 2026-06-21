@@ -270,6 +270,144 @@ Provide your response as a plain text outline with clear numbered lists and desc
     }
   };
 
+  const validateCompiledStrategy = (parsedData: any): string[] => {
+    const errors: string[] = [];
+
+    if (typeof parsedData !== 'object' || parsedData === null) {
+      errors.push('返回的 JSON 数据必须是一个对象');
+      return errors;
+    }
+
+    // 1. Validate strategyName
+    if (!parsedData.strategyName || typeof parsedData.strategyName !== 'string') {
+      errors.push('缺少 strategyName 字段，或它不是非空字符串。');
+    }
+
+    // 2. Validate uiGroups
+    const groupNames = new Set<string>();
+    if (parsedData.uiGroups !== undefined) {
+      if (!Array.isArray(parsedData.uiGroups)) {
+        errors.push('uiGroups 字段必须是一个数组。');
+      } else {
+        parsedData.uiGroups.forEach((group: any, idx: number) => {
+          if (!group || typeof group !== 'object') {
+            errors.push(`uiGroups[${idx}] 必须是一个对象。`);
+          } else if (!group.name || typeof group.name !== 'string') {
+            errors.push(`uiGroups[${idx}] 缺少有效的 name 属性。`);
+          } else {
+            groupNames.add(group.name);
+          }
+        });
+      }
+    }
+
+    // 3. Validate uiControls
+    const controlIds = new Set<string>();
+    if (parsedData.uiControls !== undefined) {
+      if (!Array.isArray(parsedData.uiControls)) {
+        errors.push('uiControls 字段必须是一个数组。');
+      } else {
+        parsedData.uiControls.forEach((ctrl: any, idx: number) => {
+          if (!ctrl || typeof ctrl !== 'object') {
+            errors.push(`uiControls[${idx}] 必须是一个对象。`);
+            return;
+          }
+          if (!ctrl.id || typeof ctrl.id !== 'string') {
+            errors.push(`uiControls[${idx}] 缺少 id 属性。`);
+          } else {
+            controlIds.add(ctrl.id);
+          }
+          if (!ctrl.label || typeof ctrl.label !== 'string') {
+            errors.push(`uiControls[${idx}] (${ctrl.id || idx}) 缺少 label 属性。`);
+          }
+          if (!ctrl.type || !['slider', 'checkbox', 'select'].includes(ctrl.type)) {
+            errors.push(`uiControls[${idx}] (${ctrl.id || idx}) 的 type 必须是 'slider', 'checkbox' 或 'select'。`);
+          }
+          if (!ctrl.group || typeof ctrl.group !== 'string') {
+            errors.push(`uiControls[${idx}] (${ctrl.id || idx}) 缺少 group 属性。`);
+          } else if (!groupNames.has(ctrl.group)) {
+            errors.push(`uiControls[${idx}] (${ctrl.id || idx}) 的 group "${ctrl.group}" 未在 uiGroups 中定义。`);
+          }
+
+          if (ctrl.type === 'slider') {
+            if (typeof ctrl.min !== 'number' || typeof ctrl.max !== 'number' || typeof ctrl.step !== 'number') {
+              errors.push(`uiControls[${idx}] (${ctrl.id || idx}) 是 slider 类型，必须提供数值类型的 min, max 和 step。`);
+            }
+            if (typeof ctrl.defaultValue !== 'number') {
+              errors.push(`uiControls[${idx}] (${ctrl.id || idx}) 是 slider 类型，defaultValue 必须是数值。`);
+            }
+          } else if (ctrl.type === 'checkbox') {
+            if (typeof ctrl.defaultValue !== 'boolean') {
+              errors.push(`uiControls[${idx}] (${ctrl.id || idx}) 是 checkbox 类型，defaultValue 必须是布尔值。`);
+            }
+          } else if (ctrl.type === 'select') {
+            if (!Array.isArray(ctrl.options) || ctrl.options.length === 0) {
+              errors.push(`uiControls[${idx}] (${ctrl.id || idx}) 是 select 类型，必须提供非空的 options 数组。`);
+            } else {
+              ctrl.options.forEach((opt: any, optIdx: number) => {
+                if (!opt || typeof opt !== 'object' || opt.label === undefined || opt.value === undefined) {
+                  errors.push(`uiControls[${idx}] (${ctrl.id || idx}) 的 options[${optIdx}] 必须是包含 label 和 value 的对象。`);
+                }
+              });
+              if (ctrl.defaultValue === undefined) {
+                errors.push(`uiControls[${idx}] (${ctrl.id || idx}) 是 select 类型，必须提供 defaultValue。`);
+              } else {
+                const hasVal = ctrl.options.some((o: any) => o && o.value === ctrl.defaultValue);
+                if (!hasVal) {
+                  errors.push(`uiControls[${idx}] (${ctrl.id || idx}) 的 defaultValue "${ctrl.defaultValue}" 不在 options 的可选值列表中。`);
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // 4. Validate params
+    if (!parsedData.params || typeof parsedData.params !== 'object') {
+      errors.push('缺少 params 属性，或它不是一个对象。');
+    } else {
+      controlIds.forEach(id => {
+        if (parsedData.params[id] === undefined) {
+          errors.push(`params 中缺少控件 "${id}" 的对应默认值。`);
+        }
+      });
+      if (Array.isArray(parsedData.uiGroups)) {
+        parsedData.uiGroups.forEach((group: any) => {
+          if (group.enabledParam && parsedData.params[group.enabledParam] === undefined) {
+            errors.push(`params 中缺少分组启用开关 "${group.enabledParam}" 的对应默认值。`);
+          }
+        });
+      }
+    }
+
+    // 5. Validate customFilterCode
+    if (!parsedData.customFilterCode || typeof parsedData.customFilterCode !== 'string') {
+      errors.push('缺少 customFilterCode 属性，或它不是字符串。');
+    } else {
+      try {
+        const codeToTest = parsedData.customFilterCode.trim();
+        new Function(
+          'code',
+          'name',
+          'rawKlines',
+          'params',
+          'preprocessKlines',
+          'isLimitUp',
+          `
+            const klines = preprocessKlines(code, rawKlines);
+            const filter = ${codeToTest};
+            return filter(code, name, klines, params, preprocessKlines, isLimitUp);
+          `
+        );
+      } catch (e: any) {
+        errors.push(`JavaScript 代码语法编译失败: ${e.message}`);
+      }
+    }
+
+    return errors;
+  };
+
   const runAICodeFlow = async (name: string, userPrompt: string, outline: string) => {
     const apiKey = apiSettings.apiKey;
     const model = apiSettings.model || 'deepseek/deepseek-v4-flash';
@@ -282,6 +420,7 @@ Provide your response as a plain text outline with clear numbered lists and desc
 
     setIsAIGenerating(true);
     setAiLoadingText('AI 正在编译核心逻辑与图表标记...');
+    
     try {
       const systemPrompt = `You are a quantitative stock research AI assistant. Your task is to compile a structured step-by-step strategy outline into standard parameters, custom filtering code, dynamic chart annotations, and dynamic UI controls.
 
@@ -330,37 +469,85 @@ You must generate chart annotations to mark key milestones of the rule on the st
 - 'line': horizontal price lines (e.g., { type: 'line', name: '参考阻力位', yAxis: price })
 All dates used in annotations MUST match exact date strings present in 'klines'.`;
 
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'Stock Monitor System'
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: outline }
-          ],
-          response_format: { type: 'json_object' }
-        })
-      });
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: outline }
+      ];
 
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson?.error?.message || `请求失败，HTTP 状态码: ${response.status}`);
+      let attempts = 0;
+      const maxAttempts = 3;
+      let success = false;
+      let parsedData: any = null;
+
+      while (attempts < maxAttempts && !success) {
+        attempts++;
+        if (attempts > 1) {
+          setAiLoadingText(`AI 正在重新编译（第 ${attempts} 次尝试，进行自我修正）...`);
+        }
+
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'Stock Monitor System'
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: messages,
+            response_format: { type: 'json_object' }
+          })
+        });
+
+        if (!response.ok) {
+          const errJson = await response.json().catch(() => ({}));
+          throw new Error(errJson?.error?.message || `请求失败，HTTP 状态码: ${response.status}`);
+        }
+
+        const resJson = await response.json();
+        let responseText = resJson.choices?.[0]?.message?.content;
+        if (!responseText) {
+          throw new Error('API 返回的数据为空。');
+        }
+
+        responseText = responseText.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
+        
+        let localParsedData: any;
+        try {
+          localParsedData = JSON.parse(responseText);
+        } catch (jsonErr: any) {
+          if (attempts < maxAttempts) {
+            console.warn(`第 ${attempts} 次尝试中 JSON 解析失败，准备重试:`, jsonErr.message);
+            messages.push({ role: 'assistant', content: responseText });
+            messages.push({ role: 'user', content: `JSON 解析失败: ${jsonErr.message}。请确保输出的是合法的 JSON 格式，不要包含任何 markdown 代码块标记，直接以 { 开始。` });
+            continue;
+          } else {
+            throw new Error(`JSON 解析失败: ${jsonErr.message}\n原始输出：${responseText}`);
+          }
+        }
+
+        const validationErrors = validateCompiledStrategy(localParsedData);
+        if (validationErrors.length > 0) {
+          const errMsg = `第 ${attempts} 次尝试 Schema 校验失败：\n` + validationErrors.map((e, idx) => `${idx + 1}. ${e}`).join('\n');
+          console.warn(errMsg);
+
+          if (attempts < maxAttempts) {
+            messages.push({ role: 'assistant', content: responseText });
+            messages.push({ role: 'user', content: `Schema 校验失败或 JavaScript 代码编译出错：\n${validationErrors.join('\n')}\n\n请修正这些错误，并输出完整且完全符合规范的 JSON。` });
+            continue;
+          } else {
+            throw new Error(errMsg);
+          }
+        }
+
+        parsedData = localParsedData;
+        success = true;
       }
 
-      const resJson = await response.json();
-      let responseText = resJson.choices?.[0]?.message?.content;
-      if (!responseText) {
-        throw new Error('API 返回的数据为空。');
+      if (!parsedData) {
+        throw new Error('AI 编译未成功生成有效数据。');
       }
-
-      responseText = responseText.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
-      const parsedData = JSON.parse(responseText);
 
       const strategyName = parsedData.strategyName || name;
       const customFilterCode = parsedData.customFilterCode || '';
