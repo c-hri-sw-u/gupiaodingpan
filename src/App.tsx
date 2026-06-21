@@ -597,6 +597,21 @@ Helper Functions Signatures:
 - preprocessKlines(code, rawKlines) => returns KlinePoint[]. (Note: the third argument 'klines' passed to filter is already preprocessed. You rarely need to call this helper yourself).
 - isLimitUp(closePriceOrKline, prevClosePrice, code) => returns boolean. (Call this to check if a kline/day is a limit-up day).
 
+MatchResult Object Schema (You MUST return an object with these exact keys if matched):
+{
+  code: string, // The stock code passed in (e.g., code)
+  name: string, // The stock name passed in (e.g., name)
+  p1_startDate: string, // Date of start of limit-up/base setup phase (YYYY-MM-DD)
+  p1_endDate: string, // Date of end of limit-up/base setup phase
+  p2_aboveStart: string, // Date of starting to stabilize above support
+  p2_pitStart: string, // Date of pulling down under support line
+  p2_recoverDate: string, // Date of recovering back above support line
+  p3_breakDate: string, // Breakthrough date string (or '蓄势待突破' / '待突破')
+  refPrice: number, // Breakthrough reference price
+  breakOpenPrice: number, // Open price on breakout day
+  notes: string // Chinese notes describing matching signals
+}
+
 Important: If the strategy outline matches the standard 4-phase pullback strategy, you can use parameters like 'p1_limitUpDays', 'p2_maPeriod' etc. and output the corresponding uiGroups/uiControls. Otherwise, define completely custom uiGroups/uiControls and read them inside customFilterCode to filter klines."
 }
 
