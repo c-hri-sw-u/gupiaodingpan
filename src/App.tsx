@@ -2133,7 +2133,7 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
           animation: 'fadeIn 0.2s ease-out'
         }}>
           <div className="glass-panel" style={{
-            width: '520px',
+            width: '800px',
             background: 'linear-gradient(135deg, rgba(20, 20, 25, 0.95), rgba(10, 10, 12, 0.98))',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '12px',
@@ -2141,26 +2141,26 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
             padding: '24px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '18px',
+            gap: '20px',
             position: 'relative',
             maxHeight: '85vh',
             overflowY: 'auto'
           }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '12px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{
                   background: 'linear-gradient(135deg, var(--accent-blue), #3b82f6)',
-                  width: '6px',
-                  height: '14px',
-                  borderRadius: '2px',
+                  width: '8px',
+                  height: '18px',
+                  borderRadius: '3px',
                   display: 'inline-block'
                 }}></span>
                 {ruleModal.mode === 'create' ? '新建策略规则' : '编辑策略规则属性与 Prompt'}
               </h3>
               <button 
                 onClick={handleCloseRuleModal}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '18px' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '24px' }}
               >
                 &times;
               </button>
@@ -2177,10 +2177,10 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
                 flexDirection: 'column',
                 gap: '10px'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#60a5fa', fontSize: '13px', fontWeight: 'bold' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#60a5fa', fontSize: '15px', fontWeight: 'bold' }}>
                   <span>🩺 AI 一键诊断与调优建议</span>
                 </div>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
                   {ruleDiagnosis.explanation}
                 </p>
 
@@ -2189,8 +2189,8 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     {/* Left Column: Old/Original */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 'bold' }}>原规则要求</span>
-                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', background: 'rgba(255, 255, 255, 0.02)', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-light)', minHeight: '60px', overflowY: 'auto', maxHeight: '100px', whiteSpace: 'pre-wrap' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 'bold' }}>原规则要求</span>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', background: 'rgba(255, 255, 255, 0.02)', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-light)', minHeight: '60px', overflowY: 'auto', maxHeight: '150px', whiteSpace: 'pre-wrap' }}>
                         <strong>初始要求:</strong><br/>
                         {ruleModal.userPrompt || '无'}<br/><br/>
                         <strong>AI策略大纲:</strong><br/>
@@ -2199,8 +2199,8 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
                     </div>
                     {/* Right Column: Suggested */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 'bold' }}>新修改建议</span>
-                      <div style={{ fontSize: '11px', color: '#93c5fd', background: 'rgba(59, 130, 246, 0.05)', padding: '8px', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.15)', minHeight: '60px', overflowY: 'auto', maxHeight: '100px', whiteSpace: 'pre-wrap' }}>
+                      <span style={{ fontSize: '12px', color: '#60a5fa', fontWeight: 'bold' }}>新修改建议</span>
+                      <div style={{ fontSize: '13px', color: '#93c5fd', background: 'rgba(59, 130, 246, 0.05)', padding: '8px', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.15)', minHeight: '60px', overflowY: 'auto', maxHeight: '150px', whiteSpace: 'pre-wrap' }}>
                         <strong>建议要求:</strong><br/>
                         {ruleDiagnosis.suggestedUserPrompt}<br/><br/>
                         <strong>建议大纲:</strong><br/>
@@ -2221,9 +2221,9 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
                     }}
                     className="btn-primary"
                     style={{
-                      height: '26px',
-                      padding: '0 10px',
-                      fontSize: '11px',
+                      height: '30px',
+                      padding: '0 12px',
+                      fontSize: '13px',
                       background: 'rgba(59, 130, 246, 0.2)',
                       border: '1px solid rgba(59, 130, 246, 0.4)',
                       color: '#93c5fd',
@@ -2244,7 +2244,7 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
 
             {/* Form Fields */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>规则名称</label>
+              <label style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 'bold' }}>规则名称</label>
               <input 
                 type="text"
                 value={ruleModal.name}
@@ -2255,29 +2255,29 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
                   background: 'rgba(255, 255, 255, 0.03)',
                   border: '1px solid var(--border-light)',
                   borderRadius: '6px',
-                  padding: '8px 12px',
+                  padding: '10px 14px',
                   color: 'var(--text-primary)',
-                  fontSize: '14px',
+                  fontSize: '16px',
                   outline: 'none'
                 }}
               />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>自然语言策略描述 (Prompt)</label>
+              <label style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 'bold' }}>自然语言策略描述 (Prompt)</label>
               <textarea 
                 value={ruleModal.userPrompt}
                 onChange={(e) => setRuleModal(prev => ({ ...prev, userPrompt: e.target.value }))}
                 placeholder="在此输入您的看盘思路，AI 将为您翻译成底层的筛选代码和图表标记。&#10;例如：寻找在年线之上的连续涨停个股，回调至60日线附近，今天跳空高开突破..."
-                rows={4}
+                rows={5}
                 style={{
                   width: '100%',
                   background: 'rgba(255, 255, 255, 0.03)',
                   border: '1px solid var(--border-light)',
                   borderRadius: '6px',
-                  padding: '8px 12px',
+                  padding: '10px 14px',
                   color: 'var(--text-primary)',
-                  fontSize: '13px',
+                  fontSize: '15px',
                   lineHeight: '1.5',
                   resize: 'vertical',
                   outline: 'none',
@@ -2289,14 +2289,14 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
             {/* AI Refined Outline Textarea */}
             {(outlineText !== undefined && (outlineText.length > 0 || ruleModal.mode === 'edit')) && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <label style={{ fontSize: '14px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span style={{ color: 'var(--accent-blue)', fontWeight: 'bold' }}>📋 AI 策略大纲 (可在此确认并修改大纲内容)</span>
                 </label>
                 <textarea 
                   value={outlineText}
                   onChange={(e) => setOutlineText(e.target.value)}
                   placeholder="等待 AI 生成策略大纲，或者在此手动编写您的量化筛选步骤..."
-                  rows={6}
+                  rows={7}
                   style={{
                     width: '100%',
                     background: 'rgba(0, 0, 0, 0.25)',
@@ -2304,7 +2304,7 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
                     borderRadius: '6px',
                     padding: '12px',
                     color: 'var(--text-secondary)',
-                    fontSize: '12px',
+                    fontSize: '14px',
                     lineHeight: '1.6',
                     resize: 'vertical',
                     outline: 'none',
@@ -2339,7 +2339,7 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
                   borderRadius: '50%',
                   animation: 'spin 1s linear infinite'
                 }}></div>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{aiLoadingText}</span>
+                <span style={{ fontSize: '15px', color: 'var(--text-muted)' }}>{aiLoadingText}</span>
               </div>
             )}
 
@@ -2349,7 +2349,7 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
                 onClick={handleCloseRuleModal}
                 disabled={isAIGenerating}
                 className="btn-secondary"
-                style={{ height: '32px', padding: '0 16px', fontSize: '12px' }}
+                style={{ height: '36px', padding: '0 20px', fontSize: '14px' }}
               >
                 取消
               </button>
@@ -2358,7 +2358,7 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
                 onClick={() => handleSaveRuleFromModal(ruleModal.name, ruleModal.userPrompt)}
                 disabled={isAIGenerating || !ruleModal.name.trim()}
                 className="btn-secondary"
-                style={{ height: '32px', padding: '0 16px', fontSize: '12px', border: '1px solid rgba(255,255,255,0.1)' }}
+                style={{ height: '36px', padding: '0 20px', fontSize: '14px', border: '1px solid rgba(255,255,255,0.1)' }}
               >
                 保存草稿
               </button>
@@ -2368,9 +2368,9 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
                 disabled={isAIGenerating || !ruleModal.name.trim() || !ruleModal.userPrompt.trim()}
                 className="btn-primary"
                 style={{ 
-                  height: '32px', 
-                  padding: '0 16px', 
-                  fontSize: '12px',
+                  height: '36px', 
+                  padding: '0 20px', 
+                  fontSize: '14px',
                   background: outlineText ? 'rgba(255, 255, 255, 0.08)' : 'linear-gradient(135deg, var(--accent-blue), #2563eb)',
                   border: outlineText ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
                   color: outlineText ? 'var(--text-primary)' : '#fff',
@@ -2386,9 +2386,9 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
                   disabled={isAIGenerating || !ruleModal.name.trim() || !outlineText.trim()}
                   className="btn-primary"
                   style={{ 
-                    height: '32px', 
-                    padding: '0 16px', 
-                    fontSize: '12px',
+                    height: '36px', 
+                    padding: '0 20px', 
+                    fontSize: '14px',
                     background: 'linear-gradient(135deg, #10b981, #059669)',
                     boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)',
                     color: '#fff',
