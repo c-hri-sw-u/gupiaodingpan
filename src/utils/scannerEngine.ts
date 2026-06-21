@@ -121,10 +121,13 @@ export function calculateMA(klines: any[], period: number): number[] {
   const ma: number[] = [];
   let sum = 0;
   for (let i = 0; i < klines.length; i++) {
-    const close = klines[i][2]; // Close price is at index 2
+    const kline = klines[i];
+    const close = Array.isArray(kline) ? kline[2] : (kline && typeof kline === 'object' ? kline.close : (Number(kline) || 0));
     sum += close;
     if (i >= period) {
-      sum -= klines[i - period][2];
+      const prevKline = klines[i - period];
+      const prevClose = Array.isArray(prevKline) ? prevKline[2] : (prevKline && typeof prevKline === 'object' ? prevKline.close : (Number(prevKline) || 0));
+      sum -= prevClose;
       ma.push(Number((sum / period).toFixed(3)));
     } else if (i === period - 1) {
       ma.push(Number((sum / period).toFixed(3)));
@@ -138,12 +141,21 @@ export function calculateMA(klines: any[], period: number): number[] {
 /**
  * 判断是否是涨停板
  */
-export function isLimitUp(close: number, prevClose: number, code: string, thresholdPct: number = 9.5): boolean {
+export function isLimitUp(closeOrKline: any, prevClose: number, code?: string, thresholdPct: number = 9.5): boolean {
+  let close = 0;
+  if (closeOrKline && typeof closeOrKline === 'object') {
+    close = closeOrKline.close;
+  } else {
+    close = Number(closeOrKline);
+  }
+  
   let expectedLimit = 0.10;
-  if (code.startsWith('300') || code.startsWith('688')) {
-    expectedLimit = 0.20;
-  } else if (code.startsWith('8') || code.startsWith('4')) {
-    expectedLimit = 0.30;
+  if (code && typeof code === 'string') {
+    if (code.startsWith('300') || code.startsWith('688')) {
+      expectedLimit = 0.20;
+    } else if (code.startsWith('8') || code.startsWith('4')) {
+      expectedLimit = 0.30;
+    }
   }
   
   const theoreticalLimitPrice = Number((prevClose * (1 + expectedLimit)).toFixed(2));
@@ -161,7 +173,7 @@ export function isTBoardLimitUp(
   limitThresholdPct: number,
   maxRealBodyPct: number
 ): boolean {
-  if (!isLimitUp(kline.close, prevClose, code, limitThresholdPct)) {
+  if (!isLimitUp(kline, prevClose, code, limitThresholdPct)) {
     return false;
   }
 
@@ -182,7 +194,19 @@ export function isTBoardLimitUp(
 /**
  * 全量数据格式化并计算均线
  */
-export function preprocessKlines(_code: string, rawKlines: any[]): KlinePoint[] {
+export function preprocessKlines(codeOrRawKlines: string | any[], rawKlinesOrUndefined?: any[]): KlinePoint[] {
+  let rawKlines: any[] = [];
+  
+  if (Array.isArray(codeOrRawKlines)) {
+    rawKlines = codeOrRawKlines;
+  } else {
+    rawKlines = rawKlinesOrUndefined || [];
+  }
+
+  if (!Array.isArray(rawKlines) || rawKlines.length === 0) {
+    return [];
+  }
+
   const ma5 = calculateMA(rawKlines, 5);
   const ma10 = calculateMA(rawKlines, 10);
   const ma20 = calculateMA(rawKlines, 20);
@@ -192,18 +216,38 @@ export function preprocessKlines(_code: string, rawKlines: any[]): KlinePoint[] 
   const ma250 = calculateMA(rawKlines, 250);
 
   return rawKlines.map((item, index) => {
-    const prevClose = index > 0 ? rawKlines[index - 1][2] : item[1];
-    const changePct = index > 0 ? Number((((item[2] - prevClose) / prevClose) * 100).toFixed(2)) : 0;
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
+      if (item.ma && item.ma[5] !== undefined) {
+        return item as KlinePoint;
+      }
+    }
+    
+    const isItemArray = Array.isArray(item);
+    const itemClose = isItemArray ? item[2] : (item?.close || 0);
+    const itemOpen = isItemArray ? item[1] : (item?.open || 0);
+    const itemHigh = isItemArray ? item[3] : (item?.high || 0);
+    const itemLow = isItemArray ? item[4] : (item?.low || 0);
+    const itemVolume = isItemArray ? item[5] : (item?.volume || 0);
+    const itemAmount = isItemArray ? item[6] : (item?.amount || 0);
+    const itemTurnover = isItemArray ? item[7] : (item?.turnoverRate || 0);
+    const itemDate = isItemArray ? item[0] : (item?.date || '');
+
+    const prevKline = index > 0 ? rawKlines[index - 1] : null;
+    const prevClose = prevKline 
+      ? (Array.isArray(prevKline) ? prevKline[2] : (prevKline?.close || itemOpen)) 
+      : itemOpen;
+
+    const changePct = index > 0 ? Number((((itemClose - prevClose) / prevClose) * 100).toFixed(2)) : 0;
     
     return {
-      date: item[0],
-      open: item[1],
-      close: item[2],
-      high: item[3],
-      low: item[4],
-      volume: item[5],
-      amount: item[6],
-      turnoverRate: item[7],
+      date: itemDate,
+      open: itemOpen,
+      close: itemClose,
+      high: itemHigh,
+      low: itemLow,
+      volume: itemVolume,
+      amount: itemAmount,
+      turnoverRate: itemTurnover,
       changePct,
       ma: {
         5: ma5[index],

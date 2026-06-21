@@ -567,6 +567,10 @@ Function Signature:
 (code, name, klines, params, preprocessKlines, isLimitUp) => MatchResult | null
 You can access all parameter values in params (e.g., params.ma_period) to dynamically check conditions.
 
+Helper Functions Signatures:
+- preprocessKlines(code, rawKlines) => returns KlinePoint[]. (Note: the third argument 'klines' passed to filter is already preprocessed. You rarely need to call this helper yourself).
+- isLimitUp(closePriceOrKline, prevClosePrice, code) => returns boolean. (Call this to check if a kline/day is a limit-up day).
+
 Important: If the strategy outline matches the standard 4-phase pullback strategy, you can use parameters like 'p1_limitUpDays', 'p2_maPeriod' etc. and output the corresponding uiGroups/uiControls. Otherwise, define completely custom uiGroups/uiControls and read them inside customFilterCode to filter klines."
 }
 
