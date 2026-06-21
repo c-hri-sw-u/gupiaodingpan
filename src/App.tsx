@@ -794,6 +794,16 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
         if (res && typeof res === 'object') {
           res.code = code;
           res.name = name;
+          res.p1_startDate = res.p1_startDate || '';
+          res.p1_endDate = res.p1_endDate || '';
+          res.p2_aboveStart = res.p2_aboveStart || '';
+          res.p2_pitStart = res.p2_pitStart || '';
+          res.p2_recoverDate = res.p2_recoverDate || '';
+          res.p3_breakDate = res.p3_breakDate || '待突破';
+          res.refPrice = typeof res.refPrice === 'number' ? res.refPrice : 0;
+          res.breakOpenPrice = typeof res.breakOpenPrice === 'number' ? res.breakOpenPrice : 0;
+          res.notes = res.notes || '';
+          res.klineData = res.klineData || preprocessKlines(code, rawKlines);
           return res;
         }
         return null;
@@ -1234,8 +1244,11 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
         // Completed
         setIsScanning(false);
         setScanProgress(null);
-        // Sort results: Latest Breakthrough Date first
-        resultsAccumulator.sort((a, b) => b.p3_breakDate.localeCompare(a.p3_breakDate));
+        resultsAccumulator.sort((a, b) => {
+          const dateA = a.p3_breakDate || '';
+          const dateB = b.p3_breakDate || '';
+          return dateB.localeCompare(dateA);
+        });
         setScanResults(resultsAccumulator);
 
         if (resultsAccumulator.length > 0) {
