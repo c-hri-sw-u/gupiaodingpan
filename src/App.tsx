@@ -775,7 +775,13 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
             return filter(code, name, klines, params, preprocessKlines, isLimitUp);
           `
         );
-        return filterFn(code, name, rawKlines, params, preprocessKlines, isLimitUp);
+        const res = filterFn(code, name, rawKlines, params, preprocessKlines, isLimitUp);
+        if (res && typeof res === 'object') {
+          res.code = code;
+          res.name = name;
+          return res;
+        }
+        return null;
       } catch (e) {
         console.error(`执行自定义规则 [${activeRule.name}] 出错:`, e);
         return null;
@@ -1221,12 +1227,17 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
           // Auto select first result
           const firstMatch = resultsAccumulator[0];
           const stock = marketSnapshot[firstMatch.code];
-          setCurrentStock({
-            code: firstMatch.code,
-            name: stock.name,
-            klines: stock.klines
-          });
-          setMatchResult(firstMatch);
+          if (stock) {
+            setCurrentStock({
+              code: firstMatch.code,
+              name: stock.name,
+              klines: stock.klines
+            });
+            setMatchResult(firstMatch);
+          } else {
+            setCurrentStock(null);
+            setMatchResult(null);
+          }
         }
 
         // 每次点击执行筛选后，理论检验部分自动更新
