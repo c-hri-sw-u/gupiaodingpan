@@ -331,10 +331,11 @@ AI 编译出来的策略步骤大纲: ${activeRule.refinedPrompt || '未提供'}
     setAiLoadingText('AI 正在分析策略意图与设计大纲...');
     try {
       const systemPrompt = `You are a quantitative stock research AI assistant. Your task is to analyze the user's natural language stock screening idea and translate it into a clear, structured, step-by-step strategy outline in Chinese.
-Focus on organizing the rules into three logical phases:
-1. Limit-Up/Base setup phase (连板或形态建构阶段)
-2. Pullback/Support phase (均线回踩或支撑阶段)
-3. Breakout/Trigger phase (突破或买入信号触发阶段)
+
+Instructions:
+- Design the strategy steps flexibly based on the user's actual request. Do NOT force a complex three-phase structure (Limit-up/Pullback/Breakout) if the user's requirement is simple (e.g., just a simple moving average breakout or an indicator cross).
+- If the user's strategy is indeed a complex pullback or multi-stage setup, you may structure it into logical phases (e.g., Setup Phase, Pullback Phase, Trigger Phase).
+- Keep it concise, professional, and only include filters/conditions requested by the user. Do not invent or add extra conditions (like volume multiplier, index limits, or consecutive limit-ups) unless explicitly requested or strongly implied.
 
 Provide your response as a plain text outline with clear numbered lists and descriptions in Chinese. Do NOT use HTML tags. Keep it concise, professional, and easy to edit.`;
 
