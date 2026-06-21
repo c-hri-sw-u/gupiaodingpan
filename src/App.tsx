@@ -495,7 +495,7 @@ Provide your response as a plain text outline with clear numbered lists and desc
     } else {
       try {
         const codeToTest = parsedData.customFilterCode.trim();
-        new Function(
+        const filterFn = new Function(
           'code',
           'name',
           'rawKlines',
@@ -508,8 +508,34 @@ Provide your response as a plain text outline with clear numbered lists and desc
             return filter(code, name, klines, params, preprocessKlines, isLimitUp);
           `
         );
+
+        // 构造300天的模拟K线数据进行运行测试，捕获运行时TypeError等潜在异常
+        const mockRawKlines = Array.from({ length: 300 }, (_, i) => {
+          const date = new Date(2026, 0, i + 1).toISOString().split('T')[0];
+          const close = 10 + Math.sin(i * 0.1);
+          return [
+            date, 
+            close - 0.1, // open
+            close,       // close
+            close + 0.2, // high
+            close - 0.2, // low
+            10000,       // volume
+            100000,      // amount
+            1.0          // turnover
+          ];
+        });
+
+        // 运行测试以捕获参数签名不正确或其它运行时错误
+        filterFn(
+          'SH600519',
+          '贵州茅台',
+          mockRawKlines,
+          parsedData.params || {},
+          preprocessKlines,
+          isLimitUp
+        );
       } catch (e: any) {
-        errors.push(`JavaScript 代码语法编译失败: ${e.message}`);
+        errors.push(`JavaScript 代码运行时执行测试失败（可能调用辅助函数参数不正确或属性访问错误）: ${e.message}`);
       }
     }
 
