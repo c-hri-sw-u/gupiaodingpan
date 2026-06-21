@@ -657,7 +657,7 @@ All dates used in annotations MUST match exact date strings present in 'klines'.
         throw new Error('AI 编译未成功生成有效数据。');
       }
 
-      const strategyName = parsedData.strategyName || name;
+      const strategyName = (name === '新自定义策略规则') ? (parsedData.strategyName || name) : name;
       const customFilterCode = parsedData.customFilterCode || '';
       const mockParams: Record<string, any> = {
         ...parsedData.params
